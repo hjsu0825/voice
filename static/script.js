@@ -1,50 +1,32 @@
+// static/script.js
 let audioContext;
-let audioSource;
-let audioBuffer;
 let pitchShifter;
+let micStream;
 
 window.onload = () => {
     audioContext = new AudioContext();
+    setupMicrophone();
 };
 
-async function fetchAudio(url) {
-    const response = await fetch(url);
-    const arrayBuffer = await response.arrayBuffer();
-    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+async function setupMicrophone() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStream = audioContext.createMediaStreamSource(stream);
+        setupPitchShifter();
+    } catch (error) {
+        console.error('Error accessing the microphone', error);
+    }
+}
+
+function setupPitchShifter() {
+    pitchShifter = audioContext.createGain(); // Default gain node to start with
+    micStream.connect(pitchShifter);
+    pitchShifter.connect(audioContext.destination);
 }
 
 function changePitch(type) {
+    const pitchRatio = type === 'high' ? 1.5 : type === 'low' ? 0.5 : 1.0;
     if (pitchShifter) {
-        pitchShifter.disconnect();
-    }
-    
-    pitchShifter = new PitchShifter(audioContext, audioBuffer, {
-        pitch: type === 'high' ? 1.5 : type === 'low' ? 0.5 : 1.0
-    });
-
-    pitchShifter.connect(audioContext.destination);
-    pitchShifter.start();
-}
-
-class PitchShifter {
-    constructor(context, buffer, options) {
-        this.context = context;
-        this.source = this.context.createBufferSource();
-        this.source.buffer = buffer;
-        this.gainNode = this.context.createGain();
-        this.pitch = options.pitch;
-        
-        this.source.connect(this.gainNode);
-        this.gainNode.connect(this.context.destination);
-        this.gainNode.gain.value = this.pitch;
-    }
-
-    start() {
-        this.source.start();
-    }
-
-    disconnect() {
-        this.source.stop();
-        this.source.disconnect();
+        pitchShifter.gain.value = pitchRatio;
     }
 }
