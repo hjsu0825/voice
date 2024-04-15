@@ -1,39 +1,48 @@
 const audioContext = new AudioContext();
 let micStream = null;
 let sourceNode = null;
-let pitchFilter = null;
+let scriptNode = null;
+let soundTouch = null;
 
-// 마이크 스트림을 초기화하고 오디오 노드를 설정하는 함수
 async function initAudio() {
-    if (micStream === null) {
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            sourceNode = audioContext.createMediaStreamSource(micStream);
-            pitchFilter = audioContext.createBiquadFilter();
-            pitchFilter.type = 'lowshelf'; // 초기 필터 타입 설정
-            sourceNode.connect(pitchFilter);
-            pitchFilter.connect(audioContext.destination);
-        } catch (error) {
-            console.error('마이크 접근 실패:', error);
-        }
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        sourceNode = audioContext.createMediaStreamSource(micStream);
+        scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+        soundTouch = new SoundTouch();
+
+        scriptNode.onaudioprocess = function (audioProcessingEvent) {
+            let inputBuffer = audioProcessingEvent.inputBuffer;
+            let outputBuffer = audioProcessingEvent.outputBuffer;
+
+            for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+                let inputData = inputBuffer.getChannelData(channel);
+                let outputData = outputBuffer.getChannelData(channel);
+
+                // 이곳에서 SoundTouchJS 라이브러리를 사용하여 피치를 조절
+                let soundTouchFilter = new SimpleFilter(inputData, outputData, soundTouch);
+                soundTouch.pitch = 1.5; // 피치 조절
+                soundTouchFilter.process();
+            }
+        };
+
+        sourceNode.connect(scriptNode);
+        scriptNode.connect(audioContext.destination);
+    } catch (error) {
+        console.error('마이크 접근 실패:', error);
     }
 }
 
-// 저음 변조 설정
 document.getElementById('lowPitch').addEventListener('click', () => {
-    pitchFilter.frequency.value = 200; // 주파수를 낮춤
-    pitchFilter.gain.value = -15; // 게인을 줄여서 저음 효과
+    soundTouch.pitch = 0.5; // 헬륨 목소리 효과를 위해 피치를 높임
 });
 
-// 고음 변조 설정
 document.getElementById('highPitch').addEventListener('click', () => {
-    pitchFilter.frequency.value = 2000; // 주파수를 높임
-    pitchFilter.gain.value = 15; // 게인을 늘려서 고음 효과
+    soundTouch.pitch = 1.5; // 헬륨 목소리 효과를 위해 피치를 높임
 });
 
 document.getElementById('reset').addEventListener('click', () => {
-    pitchFilter.frequency.value = 0; // 주파수 초기화
-    pitchFilter.gain.value = 0;      // 게인 초기화
+    soundTouch.pitch = 1.0; // 피치를 원래대로
 });
 
-initAudio(); // 오디오 시스템 초기화
+window.addEventListener('load', initAudio);
