@@ -1,4 +1,4 @@
-let audioContext = new AudioContext({ sampleRate: 44100 });
+let audioContext = new AudioContext({ sampleRate: 44100, numberOfChannels: 1 });
 let micStream;
 let jungle;
 let effectActive = false;
