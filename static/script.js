@@ -1,5 +1,4 @@
-// static/script.js
-let audioContext;
+let audioContext = new AudioContext({ sampleRate: 22050 });
 let micStream;
 let jungle;
 let effectActive = false;
@@ -42,7 +41,7 @@ function changePitch(type) {
             effectActive = true;
         }
 
-        const pitchRatio = type === 'high' ? 2.0 : type === 'low' ? 0.5 : 1.0;
+        const pitchRatio = type === 'high' ? 1.5 : 0.5; // 'high' 또는 'low'에 해당하는 피치 비율을 설정
         jungle.setPitchOffset(pitchRatio);
     }
 }
