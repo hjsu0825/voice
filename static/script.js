@@ -30,8 +30,6 @@
 //     }
 // }
 
-// static/script.js
-// static/script.js
 let audioContext;
 let micStream;
 let jungle;

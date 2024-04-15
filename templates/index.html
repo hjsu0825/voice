@@ -10,7 +10,7 @@
     <button onclick="changePitch('high')">High Pitch</button>
     <button onclick="changePitch('low')">Low Pitch</button>
     <button onclick="changePitch('normal')">Normal Voice</button>
-    <script src="https://unpkg.com/junglejs"></script>
+    <script src="{{ url_for('static', filename='jungle.js') }}"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
