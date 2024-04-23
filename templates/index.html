@@ -1,107 +1,43 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>음성 변조</title>
-</head>
-
-<body>
-  <input type="file" id="fileInput">
-  <button onclick="toggleMicrophone()">음성 변조 시작</button>
-  <audio controls id="audioElement"></audio>
-  <script>
-    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let microphoneStream;
-    let isMicrophoneOn = false;
-    let source = null;
-
-    document.getElementById('fileInput').addEventListener('change', function(event) {
-      let file = event.target.files[0];
-      let fileReader = new FileReader();
-
-      fileReader.onload = function(event) {
-        let arrayBuffer = event.target.result;
-        audioContext.decodeAudioData(arrayBuffer, function(buffer) {
-          source = audioContext.createBufferSource();
-          source.buffer = buffer;
-          document.getElementById('audioElement').src = URL.createObjectURL(file);
-        }, function(err) {
-          console.error('Error decoding audio file: ', err);
-        });
-      };
-
-      fileReader.readAsArrayBuffer(file);
-    });
-
-    async function toggleMicrophone() {
-      if (!isMicrophoneOn) {
-        try {
-          microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          isMicrophoneOn = true;
-          startVoiceManipulation();
-        } catch (err) {
-          console.error('Error accessing microphone:', err);
-        }
-      } else {
-        if (microphoneStream) {
-          let tracks = microphoneStream.getTracks();
-          tracks.forEach(track => track.stop());
-        }
-        isMicrophoneOn = false;
-      }
-    }
-
-    function startVoiceManipulation() {
-      if (!source) {
-        console.error('No audio file loaded.');
-        return;
-      }
-
-      let microphoneInput = audioContext.createMediaStreamSource(microphoneStream);
-      let processor = audioContext.createScriptProcessor(4096, 1, 1);
-      let pitchShift = audioContext.createBiquadFilter();
-      pitchShift.type = "highpass"; // 필터 타입 설정
-      pitchShift.frequency.value = 20000; // 주파수 설정
-
-      let mergedNode = audioContext.createGain(); // 마이크 입력과 WAV 파일의 음성을 합칠 노드
-
-      source.connect(mergedNode); // WAV 파일 음성을 합칠 노드에 연결
-      microphoneInput.connect(pitchShift); // 마이크 입력을 필터에 연결
-
-      pitchShift.connect(mergedNode); // 필터 처리된 마이크 입력을 합칠 노드에 연결
-      mergedNode.connect(processor); // 합친 음성을 처리할 노드에 연결
-
-      processor.connect(audioContext.destination);
-
-      processor.onaudioprocess = function (event) {
-        let inputData = event.inputBuffer.getChannelData(0);
-        let outputData = event.outputBuffer.getChannelData(0);
-
-        // 합쳐진 음성 데이터를 출력
-        for (let sample = 0; sample < inputData.length; sample++) {
-          outputData[sample] = inputData[sample];
-        }
-      };
-    }
-  </script>
-</body>
-
-</html> -->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>음성 변조</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Modulator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>음성 변조</h1>
-    <button onclick="changePitch('high')">하이톤</button>
-    <button onclick="changePitch('low')">로우톤</button>
-    <button onclick="changePitch('off')">음성변조 취소</button>
-    <script src="/static/jungle.js"></script>
-    <script src="/static/script.js"></script>
+    <h1>Voice Modulator</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="audio-file" name="audio" required>
+        <button type="button" onclick="uploadAudio()">Upload and Modulate</button>
+    </form>
+    <audio id="audio-player" controls hidden></audio>
+
+    <script>
+        function uploadAudio() {
+            var formData = new FormData();
+            var audioFile = document.getElementById("audio-file").files[0];
+            formData.append("audio", audioFile);
+
+            $.ajax({
+                url: '/modulate',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    var url = URL.createObjectURL(response);
+                    var player = document.getElementById("audio-player");
+                    player.src = url;
+                    player.hidden = false;
+                    player.play();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error uploading file: ", error);
+                }
+            });
+        }
+    </script>
 </body>
 </html>
